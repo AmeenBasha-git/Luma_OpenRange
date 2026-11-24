@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T3",
+  "name": "Risk manager",
+  "module": "openrange.agents.trader.t3_risk",
+  "uses_llm": false,
+  "description": "Size each trade at a fixed % risk; enforce daily loss, position, sector and leverage limits.",
+  "inputs": "Signal, account book",
+  "outputs": "RiskDecision",
+  "slug": "openrange-t3-risk-manager",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

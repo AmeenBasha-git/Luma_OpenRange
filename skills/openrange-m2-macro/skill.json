@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M2",
+  "name": "Macro",
+  "module": "openrange.agents.analyst.m2_macro",
+  "uses_llm": true,
+  "description": "Score rates, yields, dollar, jobs, inflation, growth and fear into a RISK_ON/RISK_OFF bias.",
+  "inputs": "macro readings, economic calendar",
+  "outputs": "MacroSnapshot",
+  "slug": "openrange-m2-macro",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

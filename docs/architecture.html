@@ -1,0 +1,343 @@
+<title>OpenRange Trading Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: blueprint sheet — one wide system diagram, then reference panels in a two-column grid */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --fg:#14202a; --muted:#5a6873; --line:#c9d3da; --grid:#e6ecef;
+  --a1:#0f7c74; --a1-soft:#e2f2f0;   /* Analyst: teal */
+  --a2:#b4610f; --a2-soft:#f8ecdf;   /* Trader: amber */
+  --code:#3c4a55; --code-soft:#e9eef1;
+  --llm:#6b3fa0; --llm-soft:#efe8f7;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f161b; --panel:#162028; --fg:#e3eaee; --muted:#93a3ae; --line:#2f3d47; --grid:#1b262e;
+  --a1:#4cc2b7; --a1-soft:#13312f; --a2:#e7a35a; --a2-soft:#3a2814;
+  --code:#b9c6cf; --code-soft:#1f2b33; --llm:#b593e3; --llm-soft:#2a2040; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161b; --panel:#162028; --fg:#e3eaee; --muted:#93a3ae; --line:#2f3d47; --grid:#1b262e;
+  --a1:#4cc2b7; --a1-soft:#13312f; --a2:#e7a35a; --a2-soft:#3a2814;
+  --code:#b9c6cf; --code-soft:#1f2b33; --llm:#b593e3; --llm-soft:#2a2040; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+header{display:grid;gap:6px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.15;margin:0;text-wrap:balance;font-weight:700}
+.lede{color:var(--muted);max-width:70ch;margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1.5px solid}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.diagram svg{display:block;min-width:980px;width:100%;height:auto}
+svg text{font-family:var(--font-body)}
+svg .mono{font-family:var(--font-mono)}
+.t-title{fill:var(--fg);font-weight:600;font-size:14px}
+.t-sub{fill:var(--muted);font-size:12px}
+.t-mono{fill:var(--muted);font-size:11px}
+.t-head{font-weight:700;font-size:15px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;min-width:0;display:grid;gap:12px;align-content:start}
+h2{font-size:17px;margin:0;font-weight:600}
+h2 small{font-family:var(--font-mono);font-weight:400;font-size:12px;color:var(--muted);margin-left:8px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.t{font-family:var(--font-mono);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--fg)}
+.tw{overflow-x:auto}
+pre{margin:0;background:var(--code-soft);border-radius:8px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;overflow-x:auto;color:var(--fg)}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+.p-code{color:var(--code);border-color:var(--code);background:var(--code-soft)}
+.p-llm{color:var(--llm);border-color:var(--llm);background:var(--llm-soft)}
+ul.plain{margin:0;padding-left:18px;display:grid;gap:6px}
+.full{grid-column:1/-1}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Architecture v1 · drafted 23 Nov 2026 · design only, not built</div>
+    <h1>Two-agent paper trading system for US stocks</h1>
+    <p class="lede">The Analyst Agent picks <b>what</b> to trade and in which direction. The Trader Agent decides <b>when</b> and <b>how</b>, using the backtested ORB rulebook. The AI explains and scores, while plain code places every order and enforces every limit. The same Trader code runs live and in backtests.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--a1-soft);border-color:var(--a1)"></i>Agent 1 · Analyst</span>
+      <span><i class="sw" style="background:var(--a2-soft);border-color:var(--a2)"></i>Agent 2 · Trader</span>
+      <span><i class="sw" style="background:var(--code-soft);border-color:var(--code)"></i>Plain code</span>
+      <span><i class="sw" style="background:var(--llm-soft);border-color:var(--llm)"></i>Uses an LLM (Gemini / Claude)</span>
+    </div>
+  </header>
+
+  <div class="diagram" role="img" aria-label="System diagram: data sources feed a data layer and orchestrator, which run Agent 1's six modules producing a watchlist that Agent 2's six modules trade; everything is stored in SQLite and shown on a dashboard.">
+  <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>
+      <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--a1)"/></marker>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--a2)"/></marker>
+      <marker id="arl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--llm)"/></marker>
+    </defs>
+
+    <!-- Row 0: data sources -->
+    <g>
+      <text x="20" y="16" class="mono t-mono" style="letter-spacing:.08em">EXTERNAL DATA SOURCES</text>
+      <g style="fill:var(--code-soft);stroke:var(--line)">
+        <rect x="20"  y="26" width="180" height="62" rx="7"/>
+        <rect x="216" y="26" width="180" height="62" rx="7"/>
+        <rect x="412" y="26" width="180" height="62" rx="7"/>
+        <rect x="608" y="26" width="180" height="62" rx="7"/>
+        <rect x="804" y="26" width="180" height="62" rx="7"/>
+        <rect x="1000" y="26" width="180" height="62" rx="7"/>
+      </g>
+      <text x="110" y="52" text-anchor="middle" class="t-title">Price bars</text>
+      <text x="110" y="72" text-anchor="middle" class="t-sub">Yahoo · Alpaca (daily, 5-min)</text>
+      <text x="306" y="52" text-anchor="middle" class="t-title">Macro</text>
+      <text x="306" y="72" text-anchor="middle" class="t-sub">FRED · ALFRED vintages</text>
+      <text x="502" y="52" text-anchor="middle" class="t-title">News</text>
+      <text x="502" y="72" text-anchor="middle" class="t-sub">News API · Yahoo headlines</text>
+      <text x="698" y="52" text-anchor="middle" class="t-title">Reddit</text>
+      <text x="698" y="72" text-anchor="middle" class="t-sub">wallstreetbets · stocks</text>
+      <text x="894" y="52" text-anchor="middle" class="t-title">StockTwits</text>
+      <text x="894" y="72" text-anchor="middle" class="t-sub">bull / bear tag ratio</text>
+      <text x="1090" y="52" text-anchor="middle" class="t-title">Calendars</text>
+      <text x="1090" y="72" text-anchor="middle" class="t-sub">FOMC · CPI · NFP · earnings</text>
+    </g>
+
+    <!-- Row 1: data layer -->
+    <rect x="20" y="108" width="1160" height="40" rx="7" style="fill:var(--panel);stroke:var(--code);stroke-width:1.5"/>
+    <text x="40" y="133" class="t-title">Data layer</text>
+    <text x="130" y="133" class="t-sub">one adapter per source · local cache · as-of date guard so backtests never see future data · market config: US (India later)</text>
+
+    <!-- Row 2: orchestrator -->
+    <rect x="20" y="164" width="1160" height="40" rx="7" style="fill:var(--panel);stroke:var(--code);stroke-width:1.5"/>
+    <text x="40" y="189" class="t-title">Orchestrator + market clock</text>
+    <text x="250" y="189" class="mono t-mono">Sun 18:00 weekly → 08:00 pre-market → 09:35 picks → every 5 min 09:35–15:55 → 16:15 review   (US/Eastern)</text>
+
+    <!-- Agent containers -->
+    <rect x="20" y="226" width="540" height="520" rx="10" style="fill:var(--a1-soft);stroke:var(--a1);stroke-width:1.5"/>
+    <text x="40" y="254" class="t-head" style="fill:var(--a1)">AGENT 1 · ANALYST</text>
+    <text x="40" y="274" class="t-sub">What to trade, and which direction</text>
+
+    <rect x="640" y="226" width="540" height="520" rx="10" style="fill:var(--a2-soft);stroke:var(--a2);stroke-width:1.5"/>
+    <text x="660" y="254" class="t-head" style="fill:var(--a2)">AGENT 2 · TRADER</text>
+    <text x="660" y="274" class="t-sub">When and how to trade · the LLM never touches orders</text>
+
+    <!-- Agent 1 modules -->
+    <g style="fill:var(--panel);stroke:var(--line)">
+      <rect x="40" y="292" width="500" height="56" rx="7"/>
+      <rect x="40" y="366" width="500" height="56" rx="7"/>
+      <rect x="40" y="440" width="500" height="56" rx="7"/>
+      <rect x="40" y="514" width="500" height="56" rx="7"/>
+      <rect x="40" y="588" width="500" height="56" rx="7"/>
+      <rect x="40" y="662" width="500" height="56" rx="7" style="stroke:var(--a1);stroke-width:1.5"/>
+    </g>
+    <g class="t-title">
+      <text x="56" y="315">M1 Fundamental screen</text>
+      <text x="56" y="389">M2 Macro</text>
+      <text x="56" y="463">M3 Regime</text>
+      <text x="56" y="537">M4 Sentiment</text>
+      <text x="56" y="611">M5 Stocks in play</text>
+      <text x="56" y="685">M6 Direction &amp; rank</text>
+    </g>
+    <g class="t-sub">
+      <text x="56" y="335">weekly · Piotroski ≥ 6, valuation, earnings · ~500 → ~100</text>
+      <text x="56" y="409">pre-market · rates, yields, $, CPI, jobs, VIX → bias + sector tilt</text>
+      <text x="56" y="483">pre-market · HMM on SPY → Bull / Bear / Sideways / High-Vol</text>
+      <text x="56" y="557">pre-market · news 60 / Reddit 25 / StockTwits 15 → ~30–50</text>
+      <text x="56" y="631">09:35 · first 5-min volume vs 14-day avg, RVOL ≥ 1.0</text>
+      <text x="56" y="705">09:35 · combined score, LONG / SHORT / SKIP → top 20</text>
+    </g>
+    <!-- badges agent 1 -->
+    <g class="mono" style="font-size:10.5px">
+      <rect x="452" y="300" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="490" y="314" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="452" y="374" width="76" height="20" rx="10" style="fill:var(--llm-soft);stroke:var(--llm)"/><text x="490" y="388" text-anchor="middle" style="fill:var(--llm)">CODE+LLM</text>
+      <rect x="452" y="448" width="76" height="20" rx="10" style="fill:var(--llm-soft);stroke:var(--llm)"/><text x="490" y="462" text-anchor="middle" style="fill:var(--llm)">CODE+LLM</text>
+      <rect x="452" y="522" width="76" height="20" rx="10" style="fill:var(--llm-soft);stroke:var(--llm)"/><text x="490" y="536" text-anchor="middle" style="fill:var(--llm)">LLM</text>
+      <rect x="452" y="596" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="490" y="610" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="452" y="670" width="76" height="20" rx="10" style="fill:var(--llm-soft);stroke:var(--llm)"/><text x="490" y="684" text-anchor="middle" style="fill:var(--llm)">CODE+LLM</text>
+    </g>
+    <!-- arrows agent 1 -->
+    <g style="stroke:var(--a1);stroke-width:1.5;fill:none" marker-end="url(#ar1)">
+      <line x1="290" y1="348" x2="290" y2="364"/>
+      <line x1="290" y1="422" x2="290" y2="438"/>
+      <line x1="290" y1="496" x2="290" y2="512"/>
+      <line x1="290" y1="570" x2="290" y2="586"/>
+      <line x1="290" y1="644" x2="290" y2="660"/>
+    </g>
+
+    <!-- Agent 2 modules -->
+    <g style="fill:var(--panel);stroke:var(--line)">
+      <rect x="660" y="292" width="500" height="56" rx="7" style="stroke:var(--a2);stroke-width:1.5"/>
+      <rect x="660" y="366" width="500" height="56" rx="7"/>
+      <rect x="660" y="440" width="500" height="56" rx="7"/>
+      <rect x="660" y="514" width="500" height="56" rx="7"/>
+      <rect x="660" y="588" width="500" height="56" rx="7"/>
+      <rect x="660" y="662" width="500" height="56" rx="7"/>
+    </g>
+    <g class="t-title">
+      <text x="676" y="315">T1 Signal engine · ORB</text>
+      <text x="676" y="389">T2 Rule gate</text>
+      <text x="676" y="463">T3 Risk manager</text>
+      <text x="676" y="537">T4 Execution</text>
+      <text x="676" y="611">T5 Monitor</text>
+      <text x="676" y="685">T6 Journal &amp; lessons</text>
+    </g>
+    <g class="t-sub">
+      <text x="676" y="335">5-min bars · stop order at first-candle high / low</text>
+      <text x="676" y="409">must pass: in play + candle colour + daily 200 EMA side</text>
+      <text x="676" y="483">size from risk %, stop = 10% ATR, max positions, daily loss stop</text>
+      <text x="676" y="557">SimBroker or Alpaca paper · slippage + fees modelled</text>
+      <text x="676" y="631">stop hits, regime-flip exit, flatten everything at 15:55</text>
+      <text x="676" y="705">16:15 · expectancy, Sharpe, picks vs random, reflection</text>
+    </g>
+    <g class="mono" style="font-size:10.5px">
+      <rect x="1072" y="300" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="1110" y="314" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="1072" y="374" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="1110" y="388" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="1072" y="448" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="1110" y="462" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="1072" y="522" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="1110" y="536" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="1072" y="596" width="76" height="20" rx="10" style="fill:var(--code-soft);stroke:var(--code)"/><text x="1110" y="610" text-anchor="middle" style="fill:var(--code)">CODE</text>
+      <rect x="1072" y="670" width="76" height="20" rx="10" style="fill:var(--llm-soft);stroke:var(--llm)"/><text x="1110" y="684" text-anchor="middle" style="fill:var(--llm)">CODE+LLM</text>
+    </g>
+    <g style="stroke:var(--a2);stroke-width:1.5;fill:none" marker-end="url(#ar2)">
+      <line x1="910" y1="348" x2="910" y2="364"/>
+      <line x1="910" y1="422" x2="910" y2="438"/>
+      <line x1="910" y1="496" x2="910" y2="512"/>
+      <line x1="910" y1="570" x2="910" y2="586"/>
+      <line x1="910" y1="644" x2="910" y2="660"/>
+    </g>
+    <!-- deterministic zone bracket -->
+    <path d="M1170,370 h6 v272 h-6" style="fill:none;stroke:var(--a2);stroke-width:1.5"/>
+    <text x="1188" y="506" transform="rotate(90 1188 506)" text-anchor="middle" class="mono t-mono" style="fill:var(--a2)">NO LLM IN THIS PATH</text>
+
+    <!-- Handoff: M6 -> T1 -->
+    <path d="M540,690 H600 V320 H656" style="fill:none;stroke:var(--fg);stroke-width:2" marker-end="url(#ar)"/>
+    <rect x="566" y="470" width="68" height="64" rx="6" style="fill:var(--panel);stroke:var(--fg)"/>
+    <text x="600" y="490" text-anchor="middle" class="mono" style="fill:var(--fg);font-size:11px;font-weight:600">watchlist</text>
+    <text x="600" y="506" text-anchor="middle" class="mono t-mono">.json</text>
+    <text x="600" y="524" text-anchor="middle" class="mono t-mono">09:35</text>
+
+    <!-- Feedback: T6 -> Agent 1 -->
+    <path d="M910,718 V770 H290 V748" style="fill:none;stroke:var(--llm);stroke-width:1.5;stroke-dasharray:6 4" marker-end="url(#arl)"/>
+    <rect x="470" y="759" width="260" height="22" rx="11" style="fill:var(--panel);stroke:var(--llm)"/>
+    <text x="600" y="774" text-anchor="middle" class="t-sub" style="fill:var(--llm)">regime-tagged lessons → next morning</text>
+
+    <!-- Bottom row -->
+    <rect x="20" y="800" width="520" height="80" rx="8" style="fill:var(--code-soft);stroke:var(--code);stroke-width:1.5"/>
+    <text x="40" y="826" class="t-title">SQLite store</text>
+    <text x="40" y="846" class="mono t-mono">watchlists · signals · orders · fills · positions · trades</text>
+    <text x="40" y="864" class="mono t-mono">equity · regimes · sentiment · lessons · llm_calls (audit)</text>
+
+    <rect x="580" y="800" width="280" height="80" rx="8" style="fill:var(--panel);stroke:var(--code);stroke-width:1.5"/>
+    <text x="600" y="826" class="t-title">Dashboard (Streamlit)</text>
+    <text x="600" y="846" class="t-sub">analyst reasoning · live trades</text>
+    <text x="600" y="864" class="t-sub">P&amp;L vs SPY · picks vs random</text>
+
+    <rect x="900" y="800" width="280" height="80" rx="8" style="fill:var(--panel);stroke:var(--code);stroke-width:1.5;stroke-dasharray:5 4"/>
+    <text x="920" y="826" class="t-title">Backtest harness</text>
+    <text x="920" y="846" class="t-sub">replay clock + SimBroker</text>
+    <text x="920" y="864" class="t-sub">drives the same Trader code</text>
+
+    <g style="stroke:var(--muted);stroke-width:1.5;fill:none" marker-end="url(#ar)">
+      <line x1="540" y1="840" x2="576" y2="840"/>
+    </g>
+    <path d="M1040,800 V786 H1150 V722" style="fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4" marker-end="url(#ar)"/>
+    <!-- data layer feeds agents -->
+    <g style="stroke:var(--muted);stroke-width:1.5;fill:none" marker-end="url(#ar)">
+      <line x1="290" y1="204" x2="290" y2="224"/>
+      <line x1="910" y1="204" x2="910" y2="224"/>
+      <line x1="600" y1="88" x2="600" y2="106"/>
+      <line x1="600" y1="148" x2="600" y2="162"/>
+    </g>
+  </svg>
+  </div>
+
+  <div class="grid2">
+    <section class="card full">
+      <h2>One trading day <small>US/Eastern</small></h2>
+      <div class="tw"><table>
+        <thead><tr><th>Time</th><th>Who</th><th>What happens</th><th>Output</th></tr></thead>
+        <tbody>
+          <tr><td class="t">Sun 18:00</td><td>Analyst M1</td><td>Fundamental screen of the ~500-stock universe</td><td>quality list (~100)</td></tr>
+          <tr><td class="t">08:00</td><td>Analyst M2–M4</td><td>Macro score, HMM regime, news and social sentiment on candidates; event-day check (CPI, FOMC, NFP)</td><td>30–50 candidates, regime, size cap</td></tr>
+          <tr><td class="t">09:30–09:35</td><td>—</td><td>First 5-min candle forms; this is the opening range</td><td>OR high / low, candle colour</td></tr>
+          <tr><td class="t">09:35</td><td>Analyst M5–M6</td><td>Relative volume, rank, LONG / SHORT, top 20</td><td><code>watchlist.json</code></td></tr>
+          <tr><td class="t">09:35–15:55</td><td>Trader T1–T5</td><td>Every 5 min: place stop orders at OR high/low, gate, size, execute, manage stops</td><td>orders, fills, positions</td></tr>
+          <tr><td class="t">15:55</td><td>Trader T5</td><td>Close every open position (intraday only)</td><td>flat book</td></tr>
+          <tr><td class="t">16:15</td><td>Trader T6</td><td>Stats, picks vs random, LLM writes regime-tagged lessons</td><td>lessons for tomorrow</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Where the LLM is used, and where it isn't</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Module</th><th>Role</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td>M4 Sentiment</td><td><span class="pill p-llm">LLM</span> scores headlines and posts into band, 0–10 score and confidence; drops off-topic posts</td><td>Fast tier (Gemini Flash / Claude Haiku)</td></tr>
+          <tr><td>M2, M3</td><td><span class="pill p-llm">LLM</span> writes the plain-English macro and regime story; numbers come from code</td><td>Strong tier (Gemini Pro / Claude Sonnet)</td></tr>
+          <tr><td>M6 Rank</td><td><span class="pill p-llm">LLM</span> explains each pick; the score itself is code</td><td>Strong tier</td></tr>
+          <tr><td>T6 Journal</td><td><span class="pill p-llm">LLM</span> reviews the day and writes lessons</td><td>Strong tier</td></tr>
+          <tr><td>T1–T5</td><td><span class="pill p-code">CODE</span> signals, gate, risk, orders, exits. No LLM.</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <p class="t-sub" style="margin:0;color:var(--muted);font-size:13px">Every LLM answer must fit a fixed schema. If a call fails, the module falls back to its code score and trading continues.</p>
+    </section>
+
+    <section class="card">
+      <h2>Hand-off contract <small>Agent 1 → Agent 2</small></h2>
+<pre>{
+  "date": "2026-11-24",
+  "regime": "BULL",           // sets max size
+  "macro_bias": "RISK_ON",
+  "event_risk": "CPI 08:30",  // half size
+  "picks": [{
+    "ticker": "NVDA",
+    "bias": "LONG",
+    "rvol": 3.1,
+    "conviction": 0.82,
+    "above_ema200": true,
+    "atr14": 4.20,
+    "catalyst": "Earnings beat",
+    "reason": "..."
+  }]
+}</pre>
+    </section>
+
+    <section class="card">
+      <h2>Trader rulebook in one place <small>Section 5A</small></h2>
+      <ul class="plain">
+        <li><b>Entry:</b> stop order at the first 5-min candle's high (green candle, long) or low (red candle, short)</li>
+        <li><b>Gate:</b> stock in play (RVOL ≥ 1.0, top 20) and on the right side of the daily 200 EMA</li>
+        <li><b>Stop:</b> 10% of 14-day ATR from entry</li>
+        <li><b>Exit:</b> no target; close at 15:55</li>
+        <li><b>Backtest:</b> +0.13R per trade, profit factor 1.24, 650 trades over 2 years; random stocks lose</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Proposed folders</h2>
+<pre>luma/
+├─ config/            settings.yaml, market_us.yaml
+├─ luma/core/         schemas, db, clock, llm client
+├─ luma/data/         one adapter per source + cache
+├─ luma/agents/
+│  ├─ analyst/        m1_fundamental … m6_rank
+│  └─ trader/         signals, gate, risk, broker,
+│                     monitor, journal
+├─ luma/orchestrator/ scheduler, jobs
+├─ luma/backtest/     replay clock, runner
+├─ dashboard/         Streamlit app
+└─ tests/</pre>
+    </section>
+
+    <section class="card full">
+      <h2>Still to decide before building</h2>
+      <ul class="plain">
+        <li><b>Risk rules for ORB:</b> proposed 0.25–0.5% risk per trade, up to 20 positions, −3% daily stop, max 4× leverage</li>
+        <li><b>Broker:</b> own SimBroker only, or also Alpaca paper (needs API keys)</li>
+        <li><b>Orchestration:</b> plain Python scheduler (proposed) or LangGraph</li>
+        <li><b>Team, deadline, LLM API key (Gemini),</b> and organizer confirmation that internal modules don't count as extra agents</li>
+      </ul>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M1",
+  "name": "Fundamental screen",
+  "module": "openrange.agents.analyst.m1_fundamental",
+  "uses_llm": false,
+  "description": "Keep liquid quality stocks: price, volume and ATR filters plus Piotroski F-score >= 6.",
+  "inputs": "universe, financials",
+  "outputs": "FundamentalScore per stock",
+  "slug": "openrange-m1-fundamental-screen",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

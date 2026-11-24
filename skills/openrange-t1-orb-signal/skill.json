@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T1",
+  "name": "ORB signal",
+  "module": "openrange.agents.trader.t1_signals",
+  "uses_llm": false,
+  "description": "Opening Range Breakout: stop entry at the 5-minute range high/low, stop = 10% of daily ATR.",
+  "inputs": "Watchlist picks",
+  "outputs": "Signal per pick",
+  "slug": "openrange-t1-orb-signal",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

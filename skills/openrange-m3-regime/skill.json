@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M3",
+  "name": "Regime",
+  "module": "openrange.agents.analyst.m3_regime",
+  "uses_llm": true,
+  "description": "Label the market BULL/BEAR/SIDEWAYS/HIGH_VOL from SPY; sets position size.",
+  "inputs": "SPY daily bars, universe",
+  "outputs": "RegimeState",
+  "slug": "openrange-m3-regime",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

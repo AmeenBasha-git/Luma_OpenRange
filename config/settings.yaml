@@ -1,0 +1,76 @@
+# OpenRange settings. Every number the system uses lives here or in market_us.yaml.
+
+mode: fake            # fake | backtest | live
+market: us            # loads config/market_us.yaml
+data: fake            # PRICES: fake (synthetic, 30 stocks) | yahoo (real, 60 days) | alpaca (real, 2 years, 1-min fills)
+sources:              # the other data, each switched separately
+  news: fake          # fake | alpaca      (Alpaca News, same keys as prices)
+  social: fake        # fake | apewisdom   (Reddit mention counts, free, live only). Reddit API: future
+
+llm:                  # which provider each agent uses is set under platform: below
+  models:
+    gemini: {fast: gemini-2.5-flash, smart: gemini-2.5-pro}
+    claude: {fast: claude-haiku-5-5, smart: claude-sonnet-5-5}
+
+broker: sim           # sim | alpaca_paper
+
+# ---------------------------------------------------------------- sponsor tools
+# Each switch falls back to the local version, so the system always runs without keys.
+platform:
+  bus: local                     # local | band          (BAND: agent-to-agent messages)
+  analyst_llm: fake              # fake | gemini | claude | lyzr   (Lyzr: guardrails + audit log)
+  trader_llm: fake               # fake | gemini | claude | lyzr | adal  (AdaL: T6 daily review)
+  band:
+    base_url: https://app.band.ai
+    room_id: ""                  # BAND chat room shared by both agents
+    analyst_agent_id: ""         # from BAND > Agents > Connect remote agent
+    trader_agent_id: ""
+  lyzr:
+    base_url: https://agent-prod.studio.lyzr.ai
+    fast_agent_id: ""            # agent created in Lyzr Agent Studio (fast model)
+    smart_agent_id: ""           # agent created in Lyzr Agent Studio (smart model)
+  adal:
+    command: adal                # AdaL CLI on PATH (run `adal` once to log in)
+    timeout_s: 300
+  agent37:
+    api_url: https://api.agent37.com
+    exec_url: https://sandbox.agent37.app
+    template: openrange          # built with: npx agent37 templates build . --name openrange
+
+account:
+  starting_equity: 100000
+
+risk:
+  risk_per_trade_pct: 0.5        # % of equity risked per trade
+  max_positions: 20
+  max_per_sector: 2
+  daily_loss_stop_pct: 3.0       # stop opening trades after -3% on the day
+  max_leverage: 4.0
+  high_vol_size_mult: 0.5        # High-Vol regime -> half size
+  event_day_size_mult: 0.5       # FOMC / CPI / NFP day -> half size
+
+strategy:                        # Section 5A of PROJECT_SPEC.md
+  name: ORB5
+  stop_atr_fraction: 0.10        # stop = 10% of 14-day daily ATR
+  min_rvol: 1.0
+  selection: rvol                # rvol (Stocks in Play) | random (baseline to prove selection adds value)
+  max_picks: 20
+  min_price: 5.0
+  min_avg_volume: 1000000
+  min_atr: 0.50
+
+costs:
+  commission_per_share: 0.0035
+  slippage_per_share: 0.01
+
+analyst:
+  min_piotroski: 6
+  # Turn a filter off while its data source is still fake (Phase 1: prices are real, the rest is fake).
+  filters:
+    piotroski: true            # M1 quality filter (needs real financials -> Phase 2)
+    sentiment_veto: true       # M6 drops picks with strongly opposite sentiment (needs real news -> Phase 2)
+  stocktwits_weight: 0.15     # share of the score from StockTwits bull/bear tags, when that source is available
+
+paths:
+  db: data/openrange.db
+  cache: data/cache

@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M6",
+  "name": "Direction & Rank",
+  "module": "openrange.agents.analyst.m6_rank",
+  "uses_llm": true,
+  "description": "Pick LONG/SHORT from the opening candle, rank by RVOL, keep the top 20 with a reason.",
+  "inputs": "InPlay, scores from M1-M4",
+  "outputs": "Watchlist",
+  "slug": "openrange-m6-direction-rank",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

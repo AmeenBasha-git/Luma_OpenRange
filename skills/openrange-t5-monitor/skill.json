@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T5",
+  "name": "Monitor",
+  "module": "openrange.agents.trader.t5_monitor",
+  "uses_llm": false,
+  "description": "Turn closed positions into trades and close everything at 15:55.",
+  "inputs": "positions, fills",
+  "outputs": "Trade",
+  "slug": "openrange-t5-monitor",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

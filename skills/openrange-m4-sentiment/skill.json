@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M4",
+  "name": "Sentiment",
+  "module": "openrange.agents.analyst.m4_sentiment",
+  "uses_llm": true,
+  "description": "Score news, Reddit and StockTwits sentiment 0-10 with a hype warning.",
+  "inputs": "headlines, social stats",
+  "outputs": "SentimentScore per stock",
+  "slug": "openrange-m4-sentiment",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

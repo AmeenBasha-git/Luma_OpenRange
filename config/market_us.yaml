@@ -1,0 +1,62 @@
+# US market settings. Add market_in.yaml later for NSE.
+
+timezone: America/New_York
+benchmark: SPY
+
+session:
+  open: "09:30"
+  or_end: "09:35"          # opening range = first 5-min candle
+  flatten: "15:55"
+  close: "16:00"
+  bar_minutes: 5
+
+schedule:                  # all times US/Eastern
+  weekly: "Sun 18:00"
+  premarket: "08:00"
+  open: "09:35"
+  intraday_start: "09:40"
+  intraday_end: "15:50"
+  close: "15:55"
+  review: "16:15"
+
+# Fake-mode universe. Phase 1 replaces this with a real liquid-stock list.
+universe:
+  - {symbol: "AAPL", sector: tech}
+  - {symbol: "MSFT", sector: tech}
+  - {symbol: "NVDA", sector: tech}
+  - {symbol: "AMD",  sector: tech}
+  - {symbol: "META", sector: comm}
+  - {symbol: "GOOGL", sector: comm}
+  - {symbol: "AMZN", sector: consumer}
+  - {symbol: "TSLA", sector: consumer}
+  - {symbol: "NFLX", sector: comm}
+  - {symbol: "JPM",  sector: banks}
+  - {symbol: "BAC",  sector: banks}
+  - {symbol: "GS",   sector: banks}
+  - {symbol: "XOM",  sector: energy}
+  - {symbol: "CVX",  sector: energy}
+  - {symbol: "UNH",  sector: health}
+  - {symbol: "LLY",  sector: health}
+  - {symbol: "PFE",  sector: health}
+  - {symbol: "CAT",  sector: industrial}
+  - {symbol: "BA",   sector: industrial}
+  - {symbol: "WMT",  sector: consumer}
+  - {symbol: "COST", sector: consumer}
+  - {symbol: "CRM",  sector: tech}
+  - {symbol: "ORCL", sector: tech}
+  - {symbol: "INTC", sector: tech}
+  - {symbol: "DIS",  sector: comm}
+  - {symbol: "NKE",  sector: consumer}
+  - {symbol: "PYPL", sector: tech}
+  - {symbol: "UBER", sector: tech}
+  - {symbol: "SHOP", sector: tech}
+  - {symbol: "COIN", sector: banks}
+
+macro_series:              # FRED ids (used from Phase 2)
+  fed_funds: FEDFUNDS
+  y10: DGS10
+  y2: DGS2
+  unemployment: UNRATE
+  cpi: CPIAUCSL
+  core_pce: PCEPILFE
+  ism_pmi: NAPM

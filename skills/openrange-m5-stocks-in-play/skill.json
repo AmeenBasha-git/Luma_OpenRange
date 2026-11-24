@@ -1,0 +1,14 @@
+{
+  "agent": "analyst",
+  "id": "M5",
+  "name": "Stocks in Play",
+  "module": "openrange.agents.analyst.m5_in_play",
+  "uses_llm": false,
+  "description": "Find stocks whose first 5-minute candle volume is at least 1x its 14-day average (RVOL).",
+  "inputs": "5-minute bars, opening volume history",
+  "outputs": "InPlay per stock",
+  "slug": "openrange-m5-stocks-in-play",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

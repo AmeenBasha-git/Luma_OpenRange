@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T6",
+  "name": "Journal & Lessons",
+  "module": "openrange.agents.trader.t6_journal",
+  "uses_llm": true,
+  "description": "Daily stats (win rate, R, expectancy) and regime-tagged lessons for the Analyst.",
+  "inputs": "trades, equity, regime",
+  "outputs": "DailyReport",
+  "slug": "openrange-t6-journal-lessons",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

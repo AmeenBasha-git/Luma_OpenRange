@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T4",
+  "name": "Execution",
+  "module": "openrange.agents.trader.t4_broker",
+  "uses_llm": false,
+  "description": "Place stop-entry orders with protective stops in the simulator or Alpaca paper account.",
+  "inputs": "OrderIntent, bars",
+  "outputs": "Fill",
+  "slug": "openrange-t4-execution",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}

@@ -1,0 +1,14 @@
+{
+  "agent": "trader",
+  "id": "T2",
+  "name": "Rule gate",
+  "module": "openrange.agents.trader.t2_gate",
+  "uses_llm": false,
+  "description": "Pass a signal only if in play, candle direction matches, and the 200 EMA side matches.",
+  "inputs": "Signal, Pick",
+  "outputs": "GateDecision",
+  "slug": "openrange-t2-rule-gate",
+  "project": "OpenRange",
+  "version": "0.1.0",
+  "license": "MIT"
+}
